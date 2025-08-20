@@ -1,0 +1,28 @@
+- hosts: all
+  become: yes
+  tasks:
+    - name: Ensure the latest version of the package is installed
+      apt:
+        name: "{{ item }}"
+        state: latest
+      loop:
+        - git
+        - curl
+        - vim
+
+    - name: Start and enable the web server
+      service:
+        name: apache2
+        state: started
+        enabled: yes
+
+    - name: Copy configuration file
+      template:
+        src: templates/my_config.conf.j2
+        dest: /etc/my_app/my_config.conf
+
+    - name: Ensure the application is running
+      systemd:
+        name: my_app
+        state: started
+        enabled: yes

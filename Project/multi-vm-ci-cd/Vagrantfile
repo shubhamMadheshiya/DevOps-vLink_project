@@ -1,0 +1,99 @@
+Vagrant.configure("2") do |config|
+  # Increase boot timeout
+  config.vm.boot_timeout = 900
+
+  # Jenkins VM
+ config.vm.define "jenkins" do |jenkins|
+  jenkins.vm.box = "ubuntu/jammy64"
+  # jenkins.vm.boot_timeout = 600
+  jenkins.vm.hostname = "jenkins-ubuntu"
+  jenkins.vm.network "private_network", ip: "192.168.56.10"
+  jenkins.vm.network "forwarded_port", guest: 8080, host: 8080, auto_correct: true
+  jenkins.vm.provider "virtualbox" do |vb|
+    vb.memory = "6000"
+    vb.cpus = 4
+  end
+  jenkins.vm.provision "shell", path: "scripts/jenkins-setup.sh"
+end
+
+  # Nexus VM
+  config.vm.define "nexus" do |nexus|
+    nexus.vm.box = "eurolinux-vagrant/centos-stream-9" 
+    nexus.vm.hostname = "nexus-centos"
+    # nexus.vm.boot_timeout = 600
+    # Use private network for Nexus
+    nexus.vm.network "private_network", ip: "192.168.56.11"
+    # Forward Nexus port to host
+    # nexus.vm.network "forwarded_port", guest: 8081, host: 8081, auto_correct: true
+    nexus.vm.provider "virtualbox" do |vb|
+      vb.memory = "4000"
+      vb.cpus = 2
+    end
+    nexus.vm.provision "shell", path: "scripts/nexus-setup.sh"
+  end
+
+
+  # SonarQube VM
+  config.vm.define "sonarqube" do |sonarqube|
+    sonarqube.vm.box = "ubuntu/jammy64"
+    sonarqube.vm.hostname = "sonarqube-ubuntu"
+    # sonarqube.vm.boot_timeout = 600
+    sonarqube.vm.network "private_network", ip: "192.168.56.12"
+    # Forward SonarQube port to host (via Nginx on 80)
+    # sonarqube.vm.network "forwarded_port", guest: 80, host: 8082, auto_correct: true
+    sonarqube.vm.provider "virtualbox" do |vb|
+      vb.memory = "8024"
+      vb.cpus = 8
+    end
+    # sonarqube.vm.provision "shell", path: "scripts/postgresql-setup.sh"
+    sonarqube.vm.provision "shell", path: "scripts/sonarqube-setup.sh"
+    # sonarqube.vm.provision "shell", path: "scripts/nginx-setup.sh"
+  end
+
+
+
+
+  config.vm.define "sit1" do |sit1|
+    sit1.vm.box = "ubuntu/jammy64"
+    sit1.vm.hostname = "docker-ubuntu-1"
+    sit1.vm.network "private_network", ip: "192.168.56.13"
+    sit1.vm.provider "virtualbox" do |vb|
+      vb.memory = "2048"
+      vb.cpus = 2
+    end
+    sit1.vm.provision "shell", path: "scripts/sit-setup.sh"
+  end
+
+  # Define the second Docker VM
+  config.vm.define "sit2" do |sit2|
+    sit2.vm.box = "ubuntu/jammy64"
+    sit2.vm.hostname = "docker-ubuntu-2"
+    sit2.vm.network "private_network", ip: "192.168.56.14"
+    sit2.vm.provider "virtualbox" do |vb|
+      vb.memory = "2048"
+      vb.cpus = 2
+    end
+    sit2.vm.provision "shell", path: "scripts/sit-setup.sh"
+  end
+
+  # Define the Nginx load balancer VM
+  config.vm.define "nginx-lb" do |nginx|
+    nginx.vm.box = "ubuntu/jammy64"
+    nginx.vm.hostname = "nginx-lb-ubuntu"
+    nginx.vm.network "private_network", ip: "192.168.56.15"
+    nginx.vm.provider "virtualbox" do |vb|
+      vb.memory = "2048"
+      vb.cpus = 2
+    end
+    nginx.vm.provision "shell", path: "scripts/nginx-lb-setup.sh"
+  end
+
+  # Network configuration for security groups
+  # config.vm.provision "shell", inline: <<-SHELL
+  #   # Allow SSH access between VMs
+  #   iptables -A INPUT -p tcp --dport 22 -s 192.168.56.0/24 -j ACCEPT
+  # SHELL
+
+
+
+end
